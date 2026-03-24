@@ -24,6 +24,7 @@ function toggleOverview() {
     if (isShowingOverview) {
         overviewSection.style.display = 'none';
         mainContent.classList.remove('main-dashboard-hidden');
+        document.body.classList.remove('overview-active');
         overviewBtn.classList.remove('active');
         overviewBtn.querySelector('.material-icons').textContent = 'dashboard';
         overviewBtn.title = "Painel Informativo";
@@ -31,6 +32,7 @@ function toggleOverview() {
         renderOverview();
         overviewSection.style.display = 'block';
         mainContent.classList.add('main-dashboard-hidden');
+        document.body.classList.add('overview-active');
         overviewBtn.classList.add('active');
         overviewBtn.querySelector('.material-icons').textContent = 'grid_view';
         overviewBtn.title = "Voltar para o Dashboard";

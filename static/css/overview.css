@@ -9,6 +9,18 @@
     min-height: calc(100vh - 100px);
 }
 
+/* Esconder conteúdo do dashboard principal quando o painel informativo está ativo */
+.main-dashboard-hidden > section:not(#overview-section),
+.main-dashboard-hidden > div:not(#loadingOverlay) {
+    display: none !important;
+}
+
+/* Ocultar botão de filtros e o container de filtros no painel informativo */
+.overview-active #menuToggle,
+.overview-active .filters-container {
+    display: none !important;
+}
+
 .overview-container {
     max-width: 1440px;
     margin: 0 auto;
