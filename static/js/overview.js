@@ -106,7 +106,13 @@ function renderOverview() {
 
     if (!currentContainer) return;
 
-    const data = state.filteredData || state.globalData || [];
+    let data = state.filteredData || state.globalData || [];
+
+    // Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM
+    data = data.filter(item => {
+        const sistema = (item.sistema || '').toUpperCase();
+        return sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
+    });
 
     const inProgress = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
