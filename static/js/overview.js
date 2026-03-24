@@ -197,13 +197,6 @@ function renderOverview() {
                 </div>
             </div>
             <div class="summary-card glass">
-                <span class="material-icons">trending_up</span>
-                <div class="summary-info">
-                    <span class="summary-label">Progresso Médio</span>
-                    <span class="summary-value">${avgGlobalProgress}%</span>
-                </div>
-            </div>
-            <div class="summary-card glass">
                 <span class="material-icons">schedule</span>
                 <div class="summary-info">
                     <span class="summary-label">Próximas / Pendentes</span>
@@ -240,7 +233,7 @@ function renderOverview() {
                                 if (!sys) return '';
                                 let className = 'sys-tag';
                                 if (sys.includes('CLOUD')) className += ' sys-cloud';
-                                else if (sys.includes('CONTÁBIL') || sys.includes('FISCAL')) className += ' sys-fiscal';
+                                else if (sys.includes('CONTÁBIL') || sys.includes('FISCAL') || sys.includes('FISCO')) className += ' sys-fiscal';
                                 else if (sys.includes('ZAPCRM')) className += ' sys-zapcrm';
                                 else if (sys.includes('WEBPAV')) className += ' sys-webpav';
                                 return `<span class="${className}">${escapeHTML(sys)}</span>`;
@@ -376,7 +369,7 @@ function renderSystemsChart(groups) {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: ['#0ea5e9', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                backgroundColor: labels.map(label => getSistemaColor(label)),
                 borderColor: isDark ? '#1e293b' : '#ffffff',
                 borderWidth: 2
             }]

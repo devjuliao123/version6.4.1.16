@@ -12,20 +12,20 @@ function getChartColors() {
         warning: '#f59e0b',
         danger: '#ef4444',
         website: '#F07A2B',
-        cloud: '#2F5FBF',
-        fisco: '#3A4C7A',
-        zapcrm: '#39A96B'
+        cloud: '#0ea5e9',
+        fisco: '#0038a8',
+        zapcrm: '#10b981'
     };
 }
 
 function getSistemaColor(sistema) {
     const sistemaUpper = sistema.toUpperCase();
     if (sistemaUpper.includes('WEBSITE')) return '#F07A2B';
-    if (sistemaUpper.includes('CLOUD')) return '#2F5FBF';
-    if (sistemaUpper.includes('FISCO')) return '#3A4C7A';
-    if (sistemaUpper.includes('ZAPCRM')) return '#39A96B';
-    if (sistemaUpper.includes('CONTÁBIL')) return '#6366f1';
-    if (sistemaUpper.includes('FISCAL')) return '#8b5cf6';
+    if (sistemaUpper.includes('CLOUD')) return '#0ea5e9';
+    if (sistemaUpper.includes('FISCO')) return '#0038a8';
+    if (sistemaUpper.includes('ZAPCRM')) return '#10b981';
+    if (sistemaUpper.includes('CONTÁBIL')) return '#0038a8';
+    if (sistemaUpper.includes('FISCAL')) return '#0038a8';
     if (sistemaUpper.includes('WEBPAV')) return '#ec4899';
     if (sistemaUpper.includes('FOLHA')) return '#14b8a6';
     if (sistemaUpper.includes('ADICION')) return '#f97316';
