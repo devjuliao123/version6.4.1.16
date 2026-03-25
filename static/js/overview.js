@@ -108,24 +108,32 @@ function renderOverview() {
 
     if (!currentContainer) return;
 
-    let data = state.filteredData || state.globalData || [];
+    // Usamos state.globalData para garantir que clientes sem data (como Motobel) apareçam
+    // independente dos filtros de data/ano do dashboard principal.
+    let data = state.globalData || [];
 
-    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada nos sistemas alvo (independente de filtros)
+    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada (em qualquer sistema)
+    // Conforme pedido: se tiver qualquer valor na Coluna J ("Data da Implantação"), a empresa já foi migrada.
     const baseData = state.globalData || [];
-    const orgsComImplantacaoAlvo = new Set(
-        baseData.filter(item => {
-            const sistema = (item.sistema || '').toUpperCase();
-            const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
-            return isTargetSystem && !item.pendente;
-        }).map(item => item.organizacao_codigo)
-    );
+    const orgsJaMigradas = new Set();
 
-    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que NÃO possuem unidades implantadas
-    data = data.filter(item => {
+    baseData.forEach(item => {
+        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
+        if (item.organizacao_codigo && temData) {
+            orgsJaMigradas.add(item.organizacao_codigo);
+        }
+    });
+
+    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que são 100% PENDENTES
+    data = baseData.filter(item => {
         const sistema = (item.sistema || '').toUpperCase();
         const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
-        const orgNaoMigrada = !orgsComImplantacaoAlvo.has(item.organizacao_codigo);
-        return isTargetSystem && item.pendente && orgNaoMigrada;
+        const orgJaMigrada = orgsJaMigradas.has(item.organizacao_codigo);
+
+        // Filial é pendente se o texto da data de implantação estiver vazio
+        const filialPendente = !item.dataImplantacao || item.dataImplantacao.trim() === '';
+
+        return isTargetSystem && filialPendente && !orgJaMigrada;
     });
 
     const inProgress = data.filter(item => {
@@ -275,7 +283,7 @@ function renderOverview() {
 }
 
 function showOrgDetails(orgId) {
-    const data = state.filteredData || state.globalData || [];
+    const data = state.globalData || [];
     // Filtra filiais da organização que ainda estão pendentes (sem data de implantação)
     const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && item.pendente);
 
