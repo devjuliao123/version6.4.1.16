@@ -110,11 +110,22 @@ function renderOverview() {
 
     let data = state.filteredData || state.globalData || [];
 
-    // Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM e que ainda não foram implantados
+    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada nos sistemas alvo (independente de filtros)
+    const baseData = state.globalData || [];
+    const orgsComImplantacaoAlvo = new Set(
+        baseData.filter(item => {
+            const sistema = (item.sistema || '').toUpperCase();
+            const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
+            return isTargetSystem && !item.pendente;
+        }).map(item => item.organizacao_codigo)
+    );
+
+    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que NÃO possuem unidades implantadas
     data = data.filter(item => {
         const sistema = (item.sistema || '').toUpperCase();
         const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
-        return isTargetSystem && item.pendente;
+        const orgNaoMigrada = !orgsComImplantacaoAlvo.has(item.organizacao_codigo);
+        return isTargetSystem && item.pendente && orgNaoMigrada;
     });
 
     const inProgress = data.filter(item => {
