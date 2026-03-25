@@ -110,15 +110,16 @@ function renderOverview() {
 
     let data = state.filteredData || state.globalData || [];
 
-    // Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM
+    // Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM e que ainda não foram implantados
     data = data.filter(item => {
         const sistema = (item.sistema || '').toUpperCase();
-        return sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
+        const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
+        return isTargetSystem && item.pendente;
     });
 
     const inProgress = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
-        return !item.dataImplantacao && obs.includes('EM PROCESSO');
+        return obs.includes('EM PROCESSO');
     }).map(item => {
         const percentage = extractPercentage(item.observacoes);
         return { ...item, percentage };
@@ -126,7 +127,7 @@ function renderOverview() {
 
     const future = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
-        return !item.dataImplantacao && !obs.includes('EM PROCESSO');
+        return !obs.includes('EM PROCESSO');
     }).sort((a, b) => {
         const dateA = parseDate(a.dataPrevisao) || new Date(2099, 11, 31);
         const dateB = parseDate(b.dataPrevisao) || new Date(2099, 11, 31);
@@ -185,9 +186,6 @@ function renderOverview() {
         const totalOrgs = allToRender.length;
         const totalActive = groupsWithActive.reduce((sum, g) => sum + g.active_branches.length, 0);
         const totalPending = groupsOnlyFuture.reduce((sum, g) => sum + g.future_branches.length, 0);
-        const avgGlobalProgress = groupsWithActive.length > 0
-            ? Math.round(groupsWithActive.reduce((sum, g) => sum + g.avgPercentage, 0) / groupsWithActive.length)
-            : 0;
 
         summaryContainer.innerHTML = `
             <div class="summary-card glass active-orgs-kpi">
@@ -267,7 +265,8 @@ function renderOverview() {
 
 function showOrgDetails(orgId) {
     const data = state.filteredData || state.globalData || [];
-    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && !item.dataImplantacao);
+    // Filtra filiais da organização que ainda estão pendentes (sem data de implantação)
+    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && item.pendente);
 
     if (orgBranches.length === 0) return;
 
