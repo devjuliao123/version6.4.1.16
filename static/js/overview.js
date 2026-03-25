@@ -24,6 +24,7 @@ function toggleOverview() {
     if (isShowingOverview) {
         overviewSection.style.display = 'none';
         mainContent.classList.remove('main-dashboard-hidden');
+        document.body.classList.remove('overview-active');
         overviewBtn.classList.remove('active');
         overviewBtn.querySelector('.material-icons').textContent = 'dashboard';
         overviewBtn.title = "Painel Informativo";
@@ -31,6 +32,7 @@ function toggleOverview() {
         renderOverview();
         overviewSection.style.display = 'block';
         mainContent.classList.add('main-dashboard-hidden');
+        document.body.classList.add('overview-active');
         overviewBtn.classList.add('active');
         overviewBtn.querySelector('.material-icons').textContent = 'grid_view';
         overviewBtn.title = "Voltar para o Dashboard";
@@ -106,11 +108,37 @@ function renderOverview() {
 
     if (!currentContainer) return;
 
-    const data = state.filteredData || state.globalData || [];
+    // Usamos state.globalData para garantir que clientes sem data (como Motobel) apareçam
+    // independente dos filtros de data/ano do dashboard principal.
+    let data = state.globalData || [];
+
+    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada (em qualquer sistema)
+    // Conforme pedido: se tiver qualquer valor na Coluna J ("Data da Implantação"), a empresa já foi migrada.
+    const baseData = state.globalData || [];
+    const orgsJaMigradas = new Set();
+
+    baseData.forEach(item => {
+        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
+        if (item.organizacao_codigo && temData) {
+            orgsJaMigradas.add(item.organizacao_codigo);
+        }
+    });
+
+    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que são 100% PENDENTES
+    data = baseData.filter(item => {
+        const sistema = (item.sistema || '').toUpperCase();
+        const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
+        const orgJaMigrada = orgsJaMigradas.has(item.organizacao_codigo);
+
+        // Filial é pendente se o texto da data de implantação estiver vazio
+        const filialPendente = !item.dataImplantacao || item.dataImplantacao.trim() === '';
+
+        return isTargetSystem && filialPendente && !orgJaMigrada;
+    });
 
     const inProgress = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
-        return !item.dataImplantacao && obs.includes('EM PROCESSO');
+        return obs.includes('EM PROCESSO');
     }).map(item => {
         const percentage = extractPercentage(item.observacoes);
         return { ...item, percentage };
@@ -118,7 +146,7 @@ function renderOverview() {
 
     const future = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
-        return !item.dataImplantacao && !obs.includes('EM PROCESSO');
+        return !obs.includes('EM PROCESSO');
     }).sort((a, b) => {
         const dateA = parseDate(a.dataPrevisao) || new Date(2099, 11, 31);
         const dateB = parseDate(b.dataPrevisao) || new Date(2099, 11, 31);
@@ -177,9 +205,6 @@ function renderOverview() {
         const totalOrgs = allToRender.length;
         const totalActive = groupsWithActive.reduce((sum, g) => sum + g.active_branches.length, 0);
         const totalPending = groupsOnlyFuture.reduce((sum, g) => sum + g.future_branches.length, 0);
-        const avgGlobalProgress = groupsWithActive.length > 0
-            ? Math.round(groupsWithActive.reduce((sum, g) => sum + g.avgPercentage, 0) / groupsWithActive.length)
-            : 0;
 
         summaryContainer.innerHTML = `
             <div class="summary-card glass active-orgs-kpi">
@@ -194,13 +219,6 @@ function renderOverview() {
                 <div class="summary-info">
                     <span class="summary-label">Filiais Ativas</span>
                     <span class="summary-value">${totalActive}</span>
-                </div>
-            </div>
-            <div class="summary-card glass">
-                <span class="material-icons">trending_up</span>
-                <div class="summary-info">
-                    <span class="summary-label">Progresso Médio</span>
-                    <span class="summary-value">${avgGlobalProgress}%</span>
                 </div>
             </div>
             <div class="summary-card glass">
@@ -240,7 +258,7 @@ function renderOverview() {
                                 if (!sys) return '';
                                 let className = 'sys-tag';
                                 if (sys.includes('CLOUD')) className += ' sys-cloud';
-                                else if (sys.includes('CONTÁBIL') || sys.includes('FISCAL')) className += ' sys-fiscal';
+                                else if (sys.includes('CONTÁBIL') || sys.includes('FISCAL') || sys.includes('FISCO')) className += ' sys-fiscal';
                                 else if (sys.includes('ZAPCRM')) className += ' sys-zapcrm';
                                 else if (sys.includes('WEBPAV')) className += ' sys-webpav';
                                 return `<span class="${className}">${escapeHTML(sys)}</span>`;
@@ -265,8 +283,9 @@ function renderOverview() {
 }
 
 function showOrgDetails(orgId) {
-    const data = state.filteredData || state.globalData || [];
-    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && !item.dataImplantacao);
+    const data = state.globalData || [];
+    // Filtra filiais da organização que ainda estão pendentes (sem data de implantação)
+    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && item.pendente);
 
     if (orgBranches.length === 0) return;
 
@@ -376,7 +395,7 @@ function renderSystemsChart(groups) {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: ['#0ea5e9', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                backgroundColor: labels.map(label => getSistemaColor(label)),
                 borderColor: isDark ? '#1e293b' : '#ffffff',
                 borderWidth: 2
             }]
